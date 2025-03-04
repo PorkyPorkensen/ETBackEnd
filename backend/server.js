@@ -64,6 +64,15 @@ app.get('/api/tasks', async (req, res) => {
     }
 })
 
+app.get('/', async (req, res) => {
+    try {
+        const tasks = await Task.find()
+        let sortedTasks = tasks.sort((a, b) => a.completed - b.completed)
+        res.status(200).json(sortedTasks)
+    } catch (err) {
+        res.status(500).json({error: err.message})
+    }
+})
 // MY SOLUTION BELOW TO THE QUESTION: 'ADD A ROUTE FOR COMPLETED TASKS'
 
 // app.get('/api/tasks/completed', async (req, res) => {
