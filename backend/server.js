@@ -45,6 +45,8 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
+
+
 app.get('/api/users', async (req, res) => {
     try {
         const users = await User.find()
@@ -73,23 +75,6 @@ app.get('/', async (req, res) => {
         res.status(500).json({error: err.message})
     }
 })
-// MY SOLUTION BELOW TO THE QUESTION: 'ADD A ROUTE FOR COMPLETED TASKS'
-
-// app.get('/api/tasks/completed', async (req, res) => {
-//     try {
-//         let tasks = await Task.find()
-//         let completedTaskArray = []
-//         tasks.forEach((task) => {
-//             if(task.completed === true) completedTaskArray.push(task)
-//                 else return
-//             })
-//         res.status(200).json(completedTaskArray)
-//     } catch (err) {
-//         res.status(500).json({error: err.message})
-//     }
-// })
-
-// AI's solution: You can use .find() to find the tasks with completed being true.
 
 app.get('/api/tasks/completed', async (req, res) => {
     try {
@@ -101,7 +86,19 @@ app.get('/api/tasks/completed', async (req, res) => {
   });
 
 
+  app.put('/api/users/:id', async (req, res) => {
+    try {
+        const selectedUser = await User.findOne({ userID: req.params.id });
 
+        console.log(req.params.id)
+        if (!selectedUser) return res.status(404).json({error: 'User was not found'})
+            selectedUser.userName = req.body.userName
+        await selectedUser.save()
+        res.status(200).json({message: `User ${req.params.id} 's Username was changed`})
+    } catch (error) {
+        res.status(400).json({error: error.message})
+    }
+})
 
 app.put('/api/tasks/:id', async (req, res) => {
     try {
