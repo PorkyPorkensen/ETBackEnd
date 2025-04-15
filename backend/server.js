@@ -4,7 +4,7 @@ const Task = require('./models/Task')
 const User = require('./models/User')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrpyt')
+const bcrypt = require('bcrypt')
 const axios = requrie('axios')
 require('dotenv').config();
 
