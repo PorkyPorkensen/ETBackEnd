@@ -5,7 +5,7 @@ const User = require('./models/User')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const axios = requrie('axios')
+const axios = require('axios')
 require('dotenv').config();
 
 const app = express();
