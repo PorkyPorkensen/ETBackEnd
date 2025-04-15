@@ -1,10 +1,12 @@
 const express = require('express');
-require('dotenv').config();
 const mongoose = require('mongoose')
 const Task = require('./models/Task')
 const User = require('./models/User')
 const cors = require('cors')
-
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrpyt')
+const axios = requrie('axios')
+require('dotenv').config();
 
 const app = express();
 const PORT = 5000
@@ -18,7 +20,29 @@ mongoose.connect(mongoURI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error(err))
 
+async function findUserByUsername(username){
+    try {
+        const res = await axios.get('https://etbackend-production.up.railway.app/api/users');
+        return res.data.find(user => user.userName.toLowerCase() === username.toLowerCase())
+    } catch (error) {
+        console.error('Error fetching user', error);
+        return null
+    }
+}
 
+function authenticateToken(req, res, next){
+    const authHeader = req.headers['Authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+
+    if (!token) return res.sendStatus(401)
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403)
+        req.user = user
+        next()
+    })
+
+}
 app.post('/api/tasks', async (req, res) => {
     try {
         const task = new Task(req.body);
@@ -45,7 +69,19 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
+app.post('/login', async (req, res) => {
+    const {username, password} = req.body;
+    const user = await findUserByUsername(username)
 
+    if (!user) return res.status(404).json({message: 'Invalid Credentials'})
+    const validPassword = user.password === password ? password : null
+    if (!validPassword) return res.status(401).json({message: 'Invalid Credentials'})
+    
+    const token = jwt.sign({id: user.id, username: user.userName}, process.env.JWT_SECRET, {
+        expiresIn: '30m',
+    })
+    res.json({token})
+})
 
 app.get('/api/users', async (req, res) => {
     try {
