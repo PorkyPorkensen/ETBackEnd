@@ -5,7 +5,6 @@ const User = require('./models/User')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const axios = require('axios')
 require('dotenv').config();
 
 const app = express();
@@ -20,15 +19,16 @@ mongoose.connect(mongoURI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error(err))
 
-async function findUserByUsername(username){
-    try {
-        const res = await axios.get('https://etbackend-production.up.railway.app/api/users');
-        return res.data.find(user => user.userName.toLowerCase() === username.toLowerCase())
-    } catch (error) {
-        console.error('Error fetching user', error);
-        return null
-    }
-}
+// async function findUserByUsername(username){
+//     try {
+//         const res = await fetch('https://etbackend-production.up.railway.app/api/users');
+//         const users = await res.json()
+//         return res.data.find(user => user.userName.toLowerCase() === username.toLowerCase())
+//     } catch (error) {
+//         console.error('Error fetching user', error);
+//         return null
+//     }
+// }
 
 function authenticateToken(req, res, next){
     const authHeader = req.headers['Authorization']
@@ -70,18 +70,31 @@ app.post('/api/users', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const {username, password} = req.body;
-    const user = await findUserByUsername(username)
-
-    if (!user) return res.status(404).json({message: 'Invalid Credentials'})
-    const validPassword = user.password === password ? password : null
-    if (!validPassword) return res.status(401).json({message: 'Invalid Credentials'})
-    
-    const token = jwt.sign({id: user.id, username: user.userName}, process.env.JWT_SECRET, {
-        expiresIn: '30m',
-    })
-    res.json({token})
-})
+    const { userName, userID } = req.body;
+  
+    try {
+      const response = await fetch('https://etbackend-production.up.railway.app/api/users');
+      const users = await response.json();
+  
+      const user = users.find(user => user.userName === userName);
+  
+      if (!user) return res.status(401).json({ message: 'User not found' });
+  
+      if (user.userID !== userID) {
+        return res.status(401).json({ message: 'Incorrect password' });
+      }
+  
+      const token = jwt.sign({ id: user.id, userName: user.userName }, process.env.JWT_SECRET, {
+        expiresIn: '1h',
+      });
+  
+      res.json({ token, userID: user.userID, userName: user.userName });
+  
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
 app.get('/api/users', async (req, res) => {
     try {
