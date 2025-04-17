@@ -21,7 +21,7 @@ mongoose.connect(mongoURI)
 
 
 function authenticateToken(req, res, next){
-    const authHeader = req.headers['Authorization']
+    const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
 
     if (!token) return res.sendStatus(401)
@@ -33,7 +33,7 @@ function authenticateToken(req, res, next){
     })
 
 }
-app.post('/api/tasks', async (req, res) => {
+app.post('/api/tasks', authenticateToken, async (req, res) => {
     try {
         const task = new Task(req.body);
         await task.save()
@@ -123,7 +123,7 @@ app.get('/api/users', async (req, res) => {
     }
 })
 
-app.get('/api/tasks', async (req, res) => {
+app.get('/api/tasks', authenticateToken, async (req, res) => {
     try {
         const tasks = await Task.find()
         let sortedTasks = tasks.sort((a, b) => a.completed - b.completed)
@@ -133,7 +133,7 @@ app.get('/api/tasks', async (req, res) => {
     }
 })
 
-app.get('/', async (req, res) => {
+app.get('/', authenticateToken, async (req, res) => {
     try {
         const tasks = await Task.find()
         let sortedTasks = tasks.sort((a, b) => a.completed - b.completed)
@@ -143,7 +143,7 @@ app.get('/', async (req, res) => {
     }
 })
 
-app.get('/api/tasks/completed', async (req, res) => {
+app.get('/api/tasks/completed', authenticateToken,  async (req, res) => {
     try {
       const completedTasks = await Task.find({ completed: true });
       res.status(200).json(completedTasks);
@@ -153,7 +153,7 @@ app.get('/api/tasks/completed', async (req, res) => {
   });
 
 
-  app.put('/api/users/:id', async (req, res) => {
+  app.put('/api/users/:id', authenticateToken, async (req, res) => {
     try {
         const selectedUser = await User.findOne({ userID: req.params.id });
 
@@ -167,7 +167,7 @@ app.get('/api/tasks/completed', async (req, res) => {
     }
 })
 
-app.put('/api/tasks/:id', async (req, res) => {
+app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
     try {
         const selectedTask = await Task.findById(req.params.id);
         if (!selectedTask) return res.status(404).json({error: 'Task was not found'})
@@ -179,7 +179,7 @@ app.put('/api/tasks/:id', async (req, res) => {
     }
 })
 
-app.delete('/api/tasks/:id', async (req, res) => {
+app.delete('/api/tasks/:id',authenticateToken,  async (req, res) => {
     console.log('DELETE request recieved for the task ID:', req.params.id)
     try {
         let selectedTask = await Task.findByIdAndDelete(req.params.id)
