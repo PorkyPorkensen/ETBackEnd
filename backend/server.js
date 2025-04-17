@@ -10,7 +10,7 @@ require('dotenv').config();
 const app = express();
 const PORT = 5000
 const mongoURI = process.env.MONGO_URI
-
+const refreshTokens = []
 
 app.use(cors())
 app.use(express.json())
@@ -19,16 +19,6 @@ mongoose.connect(mongoURI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error(err))
 
-// async function findUserByUsername(username){
-//     try {
-//         const res = await fetch('https://etbackend-production.up.railway.app/api/users');
-//         const users = await res.json()
-//         return res.data.find(user => user.userName.toLowerCase() === username.toLowerCase())
-//     } catch (error) {
-//         console.error('Error fetching user', error);
-//         return null
-//     }
-// }
 
 function authenticateToken(req, res, next){
     const authHeader = req.headers['Authorization']
@@ -75,26 +65,54 @@ app.post('/login', async (req, res) => {
     try {
       const response = await fetch('https://etbackend-production.up.railway.app/api/users');
       const users = await response.json();
-  
       const user = users.find(user => user.userName === userName);
+
   
       if (!user) return res.status(401).json({ message: 'User not found' });
-  
       if (user.userID !== userID) {
         return res.status(401).json({ message: 'Incorrect password' });
       }
   
-      const token = jwt.sign({ id: user.id, userName: user.userName }, process.env.JWT_SECRET, {
+      const accessToken = jwt.sign({ id: user.id, userName: user.userName }, process.env.JWT_SECRET, {
         expiresIn: '1h',
       });
-  
-      res.json({ token, userID: user.userID, userName: user.userName });
+
+      const refreshToken = jwt.sign({ id: user.id, userName: user.userName }, process.env.REFRESH_TOKEN_SECRET, {
+        expiresIn: '7d',
+      });
+      
+      refreshTokens.push(refreshToken)
+      res.json({ accessToken, refreshToken,  userID: user.userID, userName: user.userName });
   
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+
+app.post('/token', (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.sendStatus(401);
+    if (!refreshTokens.includes(token)) return res.sendStatus(403);
+
+    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+
+        const accessToken = jwt.sign(
+            {id: user.id, userName: user.userName},
+            process.env.REFRESH_TOKEN_SECRET, {expiresIn: '1hr'}
+        )
+        res.json({accessToken})
+    })
+})
+
+app.post('/logout', (req, res) => {
+    const {token} = req.body;
+    refreshTokens = refreshTokens.filter(t => t !== token);
+    res.sendStatus(204)
+})
+
 
 app.get('/api/users', async (req, res) => {
     try {
