@@ -63,10 +63,11 @@ app.post('/login', async (req, res) => {
     const { userName, userID } = req.body;
   
     try {
-      const response = await fetch('https://etbackend-production.up.railway.app/api/users');
-      const users = await response.json();
-      const user = users.find(user => user.userName === userName);
+    //   const response = await fetch('https://etbackend-production.up.railway.app/api/users');
+    //   const users = await response.json();
+    //   const user = users.find(user => user.userName === userName);
 
+        const user = await User.findOne({userName})
   
       if (!user) return res.status(401).json({ message: 'User not found' });
       if (user.userID !== userID) {
