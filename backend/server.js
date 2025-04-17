@@ -10,7 +10,7 @@ require('dotenv').config();
 const app = express();
 const PORT = 5000
 const mongoURI = process.env.MONGO_URI
-const refreshTokens = []
+let refreshTokens = []
 
 app.use(cors())
 app.use(express.json())
